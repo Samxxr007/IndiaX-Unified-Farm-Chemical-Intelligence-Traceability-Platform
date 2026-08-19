@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "node ./node_modules/ts-node-dev/lib/bin.js --respawn --transpile-only src/server.ts",
-    "build": "node ./node_modules/typescript/bin/tsc",
+    "build": "prisma generate && tsc",
     "start": "node dist/server.js",
     "prisma:generate": "node ./node_modules/prisma/build/index.js generate",
     "prisma:push": "node ./node_modules/prisma/build/index.js db push",
