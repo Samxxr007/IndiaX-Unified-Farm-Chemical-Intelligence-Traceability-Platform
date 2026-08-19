@@ -24,6 +24,8 @@ export interface FarmMapProps {
   height?: string;
   selectedField?: Field | null;
   onSelectField?: (field: Field) => void;
+  onFieldClick?: (fieldId: string) => void;
+  fields?: Field[];
   className?: string;
 }
 
@@ -31,9 +33,12 @@ export const FarmMap: React.FC<FarmMapProps> = ({
   height = 'h-[380px]',
   selectedField,
   onSelectField,
+  onFieldClick,
+  fields: propFields,
   className = '',
 }) => {
-  const { fields, setSelectedFieldId, setCurrentRoute } = useApp();
+  const { fields: contextFields, setSelectedFieldId, setCurrentRoute } = useApp();
+  const fields = propFields || contextFields;
 
   const [activeLayers, setActiveLayers] = useState<{
     ndvi: boolean;

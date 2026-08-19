@@ -12,6 +12,7 @@ export interface Farm {
   state: string;
   district: string;
   totalAcreage: number;
+  totalAreaHectares?: number;
   activeFieldsCount: number;
   compositeRiskScore: number;
   riskRating: SeverityLevel;
@@ -42,6 +43,7 @@ export interface Field {
   daysUntilHarvest: number;
   coordinates: [number, number][]; // Polygon coords [lat, lng]
   center: [number, number];
+  activeCropCycle?: any;
 }
 
 export interface ChemicalRegistryItem {
@@ -50,9 +52,11 @@ export interface ChemicalRegistryItem {
   activeIngredient: string;
   type: ChemicalType;
   cpcbRegNumber: string;
+  cpcbRegistration?: string;
   toxicityClass: 'Ib (Highly Hazardous)' | 'II (Moderately Hazardous)' | 'III (Slightly Hazardous)' | 'U (Unlikely Hazardous)';
   recommendedDosePerAcre: string;
   unit: string;
+  mrlRecords?: any[];
   fssaiMRL: {
     crop: string;
     mrlMgKg: number;
@@ -141,6 +145,7 @@ export interface RiskAlert {
   intelligenceNote: string;
   timestamp: string;
   isResolved: boolean;
+  isRead?: boolean;
 }
 
 export interface TraceabilityBatch {

@@ -45,6 +45,7 @@ export interface UserProfile {
   name?: string;
   role: string;
   phone?: string;
+  organization?: string;
 }
 
 // ─── Normalizers ─────────────────────────────────────────────────────────────

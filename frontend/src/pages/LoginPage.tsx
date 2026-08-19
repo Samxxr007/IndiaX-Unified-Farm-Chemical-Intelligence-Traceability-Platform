@@ -24,7 +24,7 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleDemoLogin = async (role: 'farmer' | 'vet' | 'admin' = 'farmer') => {
+  const handleDemoLogin = async (role: 'farmer' | 'vet' | 'admin' | 'lab' | 'regulator' = 'farmer') => {
     setError('');
     setIsLoading(true);
     try {
