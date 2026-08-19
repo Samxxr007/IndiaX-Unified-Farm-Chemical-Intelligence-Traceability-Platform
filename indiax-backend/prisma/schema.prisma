@@ -1,0 +1,531 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  FARMER
+  VETERINARIAN
+  LABORATORY
+  PROCESSOR
+  REGULATOR
+  ADMIN
+}
+
+enum FarmType {
+  CROPS
+  LIVESTOCK
+  MIXED
+  ORGANIC
+  AQUACULTURE
+}
+
+enum FieldStatus {
+  ACTIVE
+  FALLOW
+  HARVESTING
+  PREPARATION
+}
+
+enum ChemicalType {
+  INSECTICIDE
+  FUNGICIDE
+  HERBICIDE
+  FERTILIZER
+  BIO_PESTICIDE
+  VETERINARY_DRUG
+  GROWTH_REGULATOR
+}
+
+enum ToxicityClass {
+  CLASS_IA
+  CLASS_IB
+  CLASS_II
+  CLASS_III
+  CLASS_U
+}
+
+enum ApplicationMethod {
+  SPRAY
+  DRIP
+  BROADCAST
+  SEED_TREATMENT
+  SOIL_APPLICATION
+  FUMIGATION
+}
+
+enum LivestockSpecies {
+  CATTLE
+  GOAT
+  SHEEP
+  POULTRY
+  PIG
+  HORSE
+  FISH
+}
+
+enum TreatmentRoute {
+  ORAL
+  INJECTION_IM
+  INJECTION_SC
+  TOPICAL
+  FEED_ADDITIVE
+  INTRAVENOUS
+}
+
+enum TreatmentFrequency {
+  ONCE
+  ONCE_DAILY
+  TWICE_DAILY
+  THREE_TIMES_DAILY
+  WEEKLY
+  AS_NEEDED
+}
+
+enum BatchStatus {
+  PENDING
+  UNDER_REVIEW
+  VERIFIED
+  HOLD
+  REJECTED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum RiskEntityType {
+  FARM
+  FIELD
+  LIVESTOCK
+  BATCH
+  CROP_CYCLE
+}
+
+enum TraceabilityEventType {
+  FARM_REGISTERED
+  FIELD_CREATED
+  CROP_PLANTED
+  CHEMICAL_APPLIED
+  LIVESTOCK_ADDED
+  TREATMENT_GIVEN
+  HARVEST_CREATED
+  LAB_SAMPLE_COLLECTED
+  LAB_RESULT_ADDED
+  BATCH_VERIFIED
+  QR_GENERATED
+  BATCH_SHIPPED
+}
+
+enum NotificationType {
+  HIGH_RISK
+  MISSING_DATA
+  LAB_RESULT
+  REGULATORY_REVIEW
+  TRACEABILITY_ISSUE
+  WITHDRAWAL_ALERT
+  SYSTEM
+}
+
+enum AuditAction {
+  LOGIN
+  LOGOUT
+  REGISTER
+  CREATE_FARM
+  UPDATE_FARM
+  DELETE_FARM
+  CREATE_FIELD
+  UPDATE_FIELD
+  CREATE_CROP_CYCLE
+  CREATE_APPLICATION
+  CREATE_LIVESTOCK
+  CREATE_TREATMENT
+  CREATE_BATCH
+  UPDATE_BATCH
+  UPLOAD_LAB_RESULT
+  CHANGE_REGULATORY_DATA
+  GENERATE_QR
+  RESOLVE_ALERT
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  phone        String?  @unique
+  fullName     String
+  passwordHash String
+  role         UserRole @default(FARMER)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  ownedFarms      Farm[]
+  farmMemberships FarmMember[]
+  treatments      Treatment[]  @relation("VeterinarianTreatments")
+  notifications   Notification[]
+  auditLogs       AuditLog[]
+
+  @@map("users")
+}
+
+model Farm {
+  id                String   @id @default(uuid())
+  name              String
+  farmType          FarmType @default(MIXED)
+  totalAreaHectares Float
+  latitude          Float?
+  longitude         Float?
+  district          String
+  state             String
+  fssaiLicense      String?
+  cpcbRegistration  String?
+  ownerId           String
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  owner          User            @relation(fields: [ownerId], references: [id])
+  members        FarmMember[]
+  fields         Field[]
+  livestockUnits LivestockUnit[]
+
+  @@map("farms")
+}
+
+model FarmMember {
+  id       String   @id @default(uuid())
+  farmId   String
+  userId   String
+  role     String   @default("MEMBER")
+  joinedAt DateTime @default(now())
+
+  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([farmId, userId])
+  @@map("farm_members")
+}
+
+model Field {
+  id             String      @id @default(uuid())
+  farmId         String
+  name           String
+  areaHectares   Float
+  soilType       String?
+  irrigationType String?
+  geometry       Json?
+  latitude       Float?
+  longitude      Float?
+  status         FieldStatus @default(ACTIVE)
+  isActive       Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  farm           Farm                  @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  cropCycles     CropCycle[]
+  applications   ChemicalApplication[]
+  harvestBatches HarvestBatch[]
+
+  @@map("fields")
+}
+
+model Crop {
+  id       String  @id @default(uuid())
+  name     String  @unique
+  variety  String?
+  category String?
+
+  cropCycles CropCycle[]
+
+  @@map("crops")
+}
+
+model CropCycle {
+  id                  String    @id @default(uuid())
+  fieldId             String
+  cropId              String
+  variety             String?
+  plantingDate        DateTime
+  expectedHarvestDate DateTime
+  actualHarvestDate   DateTime?
+  status              String    @default("ACTIVE")
+  notes               String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  field          Field                 @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  crop           Crop                  @relation(fields: [cropId], references: [id])
+  applications   ChemicalApplication[]
+  harvestBatches HarvestBatch[]
+
+  @@map("crop_cycles")
+}
+
+model Chemical {
+  id                  String        @id @default(uuid())
+  tradeName           String
+  activeIngredient    String
+  chemicalType        ChemicalType
+  toxicityClass       ToxicityClass?
+  cpcbRegNumber       String?
+  recommendedDose     Float?
+  recommendedDoseUnit String?
+  isVetApproved       Boolean       @default(false)
+  isActive            Boolean       @default(true)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  mrlRecords      ChemicalMRL[]
+  applications    ChemicalApplication[]
+  treatments      Treatment[]
+  regulatoryRules RegulatoryRule[]
+
+  @@map("chemicals")
+}
+
+model ChemicalMRL {
+  id                     String   @id @default(uuid())
+  chemicalId             String
+  crop                   String
+  mrlMgKg                Float
+  withholdingIntervalDays Int     @default(0)
+  gazetteRef             String?
+  sourceAuthority        String?
+  createdAt              DateTime @default(now())
+
+  chemical Chemical @relation(fields: [chemicalId], references: [id], onDelete: Cascade)
+
+  @@map("chemical_mrls")
+}
+
+model ChemicalApplication {
+  id                String            @id @default(uuid())
+  fieldId           String
+  cropCycleId       String?
+  chemicalId        String
+  applicationDate   DateTime
+  quantity          Float
+  quantityUnit      String
+  concentration     Float?
+  concentrationUnit String?
+  applicationMethod ApplicationMethod @default(SPRAY)
+  purpose           String?
+  notes             String?
+  applicatorId      String?
+  weatherCondition  String?
+  temperatureC      Float?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  field           Field              @relation(fields: [fieldId], references: [id])
+  cropCycle       CropCycle?         @relation(fields: [cropCycleId], references: [id])
+  chemical        Chemical           @relation(fields: [chemicalId], references: [id])
+  riskAssessments RiskAssessment[]
+
+  @@map("chemical_applications")
+}
+
+model LivestockUnit {
+  id           String          @id @default(uuid())
+  farmId       String
+  name         String
+  species      LivestockSpecies
+  breed        String?
+  headcount    Int             @default(1)
+  housingType  String?
+  isActive     Boolean         @default(true)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  farm       Farm        @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  animals    Animal[]
+  treatments Treatment[]
+
+  @@map("livestock_units")
+}
+
+model Animal {
+  id        String    @id @default(uuid())
+  unitId    String
+  tagId     String?
+  name      String?
+  dob       DateTime?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+
+  unit       LivestockUnit @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  treatments Treatment[]
+
+  @@map("animals")
+}
+
+model Treatment {
+  id               String             @id @default(uuid())
+  unitId           String
+  animalId         String?
+  chemicalId       String
+  diagnosis        String?
+  treatmentReason  String?
+  dose             Float
+  doseUnit         String
+  route            TreatmentRoute     @default(ORAL)
+  frequency        TreatmentFrequency @default(ONCE)
+  startDate        DateTime
+  endDate          DateTime?
+  veterinarianId   String?
+  withdrawalPeriodDays Int            @default(0)
+  safeMilkDate     DateTime?
+  safeMeatDate     DateTime?
+  notes            String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  unit            LivestockUnit    @relation(fields: [unitId], references: [id])
+  animal          Animal?          @relation(fields: [animalId], references: [id])
+  chemical        Chemical         @relation(fields: [chemicalId], references: [id])
+  veterinarian    User?            @relation("VeterinarianTreatments", fields: [veterinarianId], references: [id])
+  riskAssessments RiskAssessment[]
+
+  @@map("treatments")
+}
+
+model HarvestBatch {
+  id                String      @id @default(uuid())
+  fieldId           String
+  cropCycleId       String?
+  batchCode         String      @unique
+  harvestDate       DateTime
+  quantity          Float
+  quantityUnit      String      @default("kg")
+  status            BatchStatus @default(PENDING)
+  notes             String?
+  buyerName         String?
+  destinationMarket String?
+  qrUrl             String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  field              Field               @relation(fields: [fieldId], references: [id])
+  cropCycle          CropCycle?          @relation(fields: [cropCycleId], references: [id])
+  labResults         LabResult[]
+  traceabilityEvents TraceabilityEvent[]
+
+  @@map("harvest_batches")
+}
+
+model LabResult {
+  id                String   @id @default(uuid())
+  batchId           String
+  sampleCode        String?
+  chemical          String
+  measuredValue     Float
+  unit              String
+  testDate          DateTime
+  laboratory        String
+  testMethod        String?
+  nablAccreditation String?
+  certificateUrl    String?
+  status            String   @default("PASS")
+  notes             String?
+  createdAt         DateTime @default(now())
+
+  batch HarvestBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@map("lab_results")
+}
+
+model RegulatoryRule {
+  id              String    @id @default(uuid())
+  chemicalId      String
+  commodity       String
+  ruleType        String
+  value           Float?
+  unit            String?
+  sourceAuthority String
+  sourceReference String?
+  effectiveDate   DateTime?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+
+  chemical Chemical @relation(fields: [chemicalId], references: [id])
+
+  @@map("regulatory_rules")
+}
+
+model RiskAssessment {
+  id            String         @id @default(uuid())
+  entityType    RiskEntityType
+  entityId      String
+  applicationId String?
+  treatmentId   String?
+  riskScore     Float
+  riskLevel     RiskLevel
+  confidence    Float?
+  reasons       String[]
+  modelVersion  String?
+  status        String         @default("COMPLETED")
+  rawResponse   Json?
+  createdAt     DateTime       @default(now())
+
+  application ChemicalApplication? @relation(fields: [applicationId], references: [id])
+  treatment   Treatment?           @relation(fields: [treatmentId], references: [id])
+
+  @@map("risk_assessments")
+}
+
+model TraceabilityEvent {
+  id         String                @id @default(uuid())
+  batchId    String?
+  type       TraceabilityEventType
+  entityId   String?
+  entityType String?
+  metadata   Json?
+  timestamp  DateTime              @default(now())
+
+  batch HarvestBatch? @relation(fields: [batchId], references: [id])
+
+  @@map("traceability_events")
+}
+
+model Notification {
+  id         String           @id @default(uuid())
+  userId     String
+  title      String
+  message    String
+  type       NotificationType @default(SYSTEM)
+  entityId   String?
+  entityType String?
+  isRead     Boolean          @default(false)
+  createdAt  DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model AuditLog {
+  id         String      @id @default(uuid())
+  userId     String?
+  action     AuditAction
+  entityType String?
+  entityId   String?
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  timestamp  DateTime    @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}

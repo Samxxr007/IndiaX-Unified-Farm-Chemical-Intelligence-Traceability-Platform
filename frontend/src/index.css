@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --primary: 27 77 62;        /* #1B4D3E agri-forest */
+    --primary-leaf: 45 106 79;  /* #2D6A4F agri-leaf */
+    --primary-sprout: 216 243 220; /* #D8F3DC agri-sprout */
+    --bg-canvas: 250 248 245;   /* #FAF8F5 earth-canvas */
+  }
+
+  body {
+    background-color: #FAF8F5;
+    color: #3D2B1F;
+    font-family: 'Inter', 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  /* Monospace Telemetry Elements */
+  code, kbd, samp, pre, .font-mono {
+    font-family: 'JetBrains Mono', 'SFMono-Regular', Menlo, Monaco, Consolas, monospace !important;
+    font-feature-settings: "tnum" 1, "zero" 1;
+  }
+
+  /* Custom Precision Earth Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #D4C9BC;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #B3A495;
+  }
+}
+
+/* Rural Cartography & HUD Elements */
+.hud-glass {
+  background: rgba(20, 40, 29, 0.90);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(216, 243, 220, 0.15);
+  box-shadow: 0 8px 32px 0 rgba(20, 40, 29, 0.37);
+}
+
+.hud-panel {
+  background: #14281D;
+  border: 1px solid rgba(216, 243, 220, 0.12);
+}
+
+/* Radar Sweep Animation */
+@keyframes radar-sweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.animate-radar {
+  animation: radar-sweep 8s linear infinite;
+}
+
+@keyframes beacon-ping {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.animate-beacon {
+  animation: beacon-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Rural Soil Field Grid Pattern */
+.bg-geo-grid {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(45, 106, 79, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(45, 106, 79, 0.08) 1px, transparent 1px);
+}
+
+/* Print Styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+}
